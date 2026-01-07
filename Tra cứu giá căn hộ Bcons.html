@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Công cụ Tra cứu & Tính lãi suất Bất Động Sản</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .card { transition: all 0.3s ease; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+    <div class="max-w-6xl mx-auto p-4">
+        <header class="text-center py-8">
+            <h1 class="text-3xl font-bold text-blue-900 mb-2">TRA CỨU GIÁ & DỰ TOÁN TRẢ GÓP</h1>
+            <p class="text-gray-600">Dữ liệu cập nhật: BCONS CENTER CITY</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        🔍 Tìm kiếm căn hộ
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <input type="text" id="searchCode" placeholder="Nhập mã căn (VD: C.01-01)" 
+                               class="border p-2 rounded w-full focus:ring-2 focus:ring-blue-500 outline-none">
+                        
+                        <select id="filterBed" class="border p-2 rounded w-full">
+                            <option value="">Số phòng ngủ (Tất cả)</option>
+                            <option value="1">1 Phòng ngủ</option>
+                            <option value="2">2 Phòng ngủ</option>
+                            <option value="3">3 Phòng ngủ</option>
+                        </select>
+
+                        <select id="filterView" class="border p-2 rounded w-full">
+                            <option value="">Hướng View (Tất cả)</option>
+                            <option value="Đông Nam">Đông Nam</option>
+                            <option value="Tây Bắc">Tây Bắc</option>
+                            <option value="Đông Bắc">Đông Bắc</option>
+                            <option value="Tây Nam">Tây Nam</option>
+                        </select>
+                    </div>
+                    <button onclick="filterData()" class="mt-4 w-full bg-blue-600 text-white py-2 rounded font-semibold hover:bg-blue-700 transition">
+                        Tìm kiếm
+                    </button>
+                </div>
+
+                <div id="resultsArea" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    </div>
+            </div>
+
+            <div class="lg:col-span-1">
+                <div class="bg-white p-6 rounded-xl shadow-lg sticky top-6 border-t-4 border-yellow-500">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        💸 Dự toán vay ngân hàng
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">Giá trị căn hộ (VNĐ)</label>
+                            <input type="text" id="loanPrice" value="0" class="w-full border p-2 rounded font-bold text-blue-900 bg-gray-50" onkeyup="formatCurrencyInput(this)">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Tỷ lệ vay (%)</label>
+                                <select id="loanRatio" class="w-full border p-2 rounded">
+                                    <option value="70">70%</option>
+                                    <option value="50">50%</option>
+                                    <option value="80">80%</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Thời hạn (Năm)</label>
+                                <input type="number" id="loanYears" value="20" class="w-full border p-2 rounded">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">Lãi suất (%/năm)</label>
+                            <input type="number" id="interestRate" value="8.5" step="0.1" class="w-full border p-2 rounded">
+                        </div>
+
+                        <button onclick="calculateLoan()" class="w-full bg-yellow-500 text-white py-2 rounded font-bold hover:bg-yellow-600 transition">
+                            Tính toán ngay
+                        </button>
+
+                        <div id="calcResult" class="hidden mt-4 pt-4 border-t border-gray-200">
+                            <div class="flex justify-between text-sm mb-2">
+                                <span class="text-gray-600">Vốn tự có (30%):</span>
+                                <span class="font-bold" id="resSelfCapital">0</span>
+                            </div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <span class="text-gray-600">Số tiền vay:</span>
+                                <span class="font-bold text-blue-600" id="resLoanAmount">0</span>
+                            </div>
+                            <div class="bg-blue-50 p-3 rounded text-center mt-2">
+                                <p class="text-xs text-gray-500">Trả trung bình hàng tháng (Gốc + Lãi)</p>
+                                <p class="text-xl font-bold text-red-600" id="resMonthlyPay">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DỮ LIỆU MẪU (Lấy từ file Excel của bạn: Sheet PTTT1)
+        // Bạn có thể thêm hàng ngàn dòng vào đây sau khi chuyển Excel sang JSON hoặc CSV
+        const rawData = [
+            { id: "C.01-01", area: 58.71, netArea: 52.58, bed: 2, bath: 1, view: "Tây Bắc", price: 4549833168 },
+            { id: "C.01-02", area: 65.68, netArea: 59.46, bed: 2, bath: 2, view: "Tây Bắc", price: 5106780057 },
+            { id: "C.01-03", area: 55.15, netArea: 50.73, bed: 2, bath: 1, view: "Tây Bắc", price: 4422503747 },
+            { id: "C.01-10", area: 84.25, netArea: 77.31, bed: 3, bath: 2, view: "Đông Nam", price: 7089085682 },
+            { id: "C.01-15", area: 65.30, netArea: 60.47, bed: 2, bath: 2, view: "Đông Nam", price: 5662102587 },
+            { id: "C.01-25", area: 60.50, netArea: 55.52, bed: 2, bath: 2, view: "Đông Bắc", price: 4768389316 },
+            { id: "C.01-26", area: 63.43, netArea: 58.17, bed: 2, bath: 2, view: "Đông Bắc", price: 4995987149 },
+            // ... Bạn có thể copy thêm dòng từ Excel vào đây
+        ];
+
+        // 1. HÀM HIỂN THỊ DỮ LIỆU RA MÀN HÌNH
+        function renderData(data) {
+            const container = document.getElementById('resultsArea');
+            container.innerHTML = ''; // Xóa cũ
+
+            if(data.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 italic p-4">Không tìm thấy căn hộ phù hợp.</p>';
+                return;
+            }
+
+            data.forEach(item => {
+                const priceFormatted = formatMoney(item.price);
+                const html = `
+                    <div class="card bg-white p-4 rounded-lg shadow border border-gray-100 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded">${item.id}</span>
+                                <span class="text-sm text-gray-500">${item.view}</span>
+                            </div>
+                            <h3 class="font-bold text-gray-800">${item.bed} PN - ${item.bath} WC</h3>
+                            <div class="text-sm text-gray-600 mt-1">
+                                DT Tim tường: <b>${item.area}m²</b>
+                            </div>
+                            <div class="text-lg font-bold text-red-600 mt-2">
+                                ${priceFormatted}
+                            </div>
+                        </div>
+                        <button onclick="selectApartment(${item.price})" class="mt-4 w-full border border-blue-500 text-blue-600 py-1.5 rounded hover:bg-blue-50 text-sm font-semibold transition">
+                            Tính thử trả góp
+                        </button>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+        }
+
+        // 2. HÀM LỌC DỮ LIỆU
+        function filterData() {
+            const code = document.getElementById('searchCode').value.toLowerCase();
+            const bed = document.getElementById('filterBed').value;
+            const view = document.getElementById('filterView').value;
+
+            const filtered = rawData.filter(item => {
+                const matchCode = item.id.toLowerCase().includes(code);
+                // Lưu ý: Dữ liệu mẫu bed là số (2), value input là string ("2") nên dùng ==
+                const matchBed = bed === "" || item.bed == bed; 
+                const matchView = view === "" || item.view === view;
+                return matchCode && matchBed && matchView;
+            });
+
+            renderData(filtered);
+        }
+
+        // 3. HÀM CHỌN CĂN HỘ -> ĐƯA GIÁ VÀO Ô TÍNH
+        function selectApartment(price) {
+            document.getElementById('loanPrice').value = new Intl.NumberFormat('vi-VN').format(price);
+            // Cuộn màn hình lên ô tính (trên mobile)
+            if(window.innerWidth < 1024) {
+                document.getElementById('loanPrice').scrollIntoView({behavior: "smooth"});
+            }
+            // Tự động tính luôn
+            calculateLoan();
+        }
+
+        // 4. HÀM TÍNH LÃI SUẤT
+        function calculateLoan() {
+            // Lấy giá trị và xóa dấu chấm/phẩy
+            let priceStr = document.getElementById('loanPrice').value.replace(/\./g, '').replace(/,/g, '');
+            let price = parseFloat(priceStr);
+            let ratio = parseFloat(document.getElementById('loanRatio').value) / 100;
+            let years = parseFloat(document.getElementById('loanYears').value);
+            let rate = parseFloat(document.getElementById('interestRate').value) / 100;
+
+            if (isNaN(price) || price === 0) return;
+
+            let loanAmount = price * ratio;
+            let selfCapital = price - loanAmount;
+            let months = years * 12;
+            
+            // Tính trả nợ gốc hàng tháng (đều)
+            let monthlyPrincipal = loanAmount / months;
+            // Tính lãi tháng đầu tiên (cao nhất)
+            let firstMonthInterest = (loanAmount * rate) / 12;
+            let totalFirstMonth = monthlyPrincipal + firstMonthInterest;
+
+            // Hiển thị kết quả
+            document.getElementById('resSelfCapital').innerText = formatMoney(selfCapital);
+            document.getElementById('resLoanAmount').innerText = formatMoney(loanAmount);
+            document.getElementById('resMonthlyPay').innerText = formatMoney(totalFirstMonth) + "/tháng đầu";
+            
+            document.getElementById('calcResult').classList.remove('hidden');
+        }
+
+        // Tiện ích: Format tiền tệ VNĐ
+        function formatMoney(amount) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        }
+
+        function formatCurrencyInput(input) {
+            let value = input.value.replace(/\D/g, "");
+            input.value = new Intl.NumberFormat('vi-VN').format(value);
+        }
+
+        // Khởi chạy lần đầu
+        renderData(rawData);
+
+    </script>
+</body>
+</html>
